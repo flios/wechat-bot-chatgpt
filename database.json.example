@@ -1,12 +1,22 @@
 {
   "openai": {
-    "secret_key": "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"
+    "secret_key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
   },
   "wechat": {
     "name": "chatgpt-bot",
     "general_chat_message": {
       "history_size": 20,
-      "default_system_prompt": "You are ChatGPT, a large language model trained by OpenAI."
+      "default_system_prompt": "You are ChatGPT, a large language model trained by OpenAI. Knowledge cutoff: 2021-09 Current date: 2023-03-04"
     },
+  },
+  "tencent_sms": {
+    "_comment": "This part is optional! Remove the whole tencent_sms object if not necessary.",
+    "secret_id": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    "secret_key": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "region": "ap-beijing",
+    "sdk_app_id": "1234567890",
+    "sign_name": "My Sign",
+    "template_id": "1234567",
+    "phone_number_set": ["+8613800000000"]
   }
 }
