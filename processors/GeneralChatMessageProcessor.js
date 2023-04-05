@@ -29,13 +29,28 @@ export default class GeneralChatMessageProcessor {
             const response_query = { "role": response_message.role, "content": response_message.content };
             this.history.push(current_query);
             this.history.push(response_query);
-            await message.room().say(await this.build_bot_reply(
-                message.talker().name(), text, response_message.content.trim()), message.talker());
+            const room = message.room()
+            const talker = message.talker()
+            if (room){
+                await room.say(await this.build_bot_reply(
+                    message.talker().name(), text, response_message.content.trim()), message.talker());
+            } else {
+                await talker.say(await this.build_bot_reply(
+                    message.talker().name(), text, response_message.content.trim()));
+            }
+             
             return true;
         } catch (error) {
-            await message.room().say(await this.build_bot_reply(
-                message.talker().name(), text,
-                `遇到未知错误，请检查是否文本过长，或重试一次！\n> 错误信息：\n${this.format_exc(error)}`), message.talker());
+            const room = message.room()
+            const talker = message.talker()
+            const content = `遇到未知错误，请检查是否文本过长，或重试一次！\n> 错误信息：\n${this.format_exc(error)}`
+            if (room){
+                await room.say(await this.build_bot_reply(
+                    message.talker().name(), text, content), message.talker());
+            } else {
+                await talker.say(await this.build_bot_reply(
+                    message.talker().name(), text, content));
+            }
         }
         return false;
     }
@@ -44,24 +59,46 @@ export default class GeneralChatMessageProcessor {
         const text = bot_user_name ? message.text().replaceAll(`@${bot_user_name}`, "").trim() : message.text().trim();
         if (reset) {
             this.system_queries = [{ "role": "system", "content": this.default_system_prompt }];
-            await message.room().say(await this.build_bot_reply(
-                message.talker().name(), text,
-                `已经重置系统提示。现在的系统提示为：\n${this.system_queries[0].content}`), message.talker());
+            const room = message.room()
+            const talker = message.talker()
+            const content = `已经重置系统提示。现在的系统提示为：\n${this.system_queries[0].content}`
+            if (room){
+                await room.say(await this.build_bot_reply(
+                    message.talker().name(), text, content), message.talker());
+            } else {
+                await talker.say(await this.build_bot_reply(
+                    message.talker().name(), text, content));
+            }
+
         } else {
             const system_prompt = text.replaceAll("!!!SYSTEM!!!", "").trim();
             this.system_queries = [{ "role": "system", "content": system_prompt }];
-            await message.room().say(await this.build_bot_reply(
-                message.talker().name(), text,
-                `已经成功设置系统提示。现在的系统提示为：\n${this.system_queries[0].content}`), message.talker());
+            const room = message.room()
+            const talker = message.talker()
+            const content = `已经成功设置系统提示。现在的系统提示为：\n${this.system_queries[0].content}`
+            if (room){
+                await room.say(await this.build_bot_reply(
+                    message.talker().name(), text, content), message.talker());
+            } else {
+                await talker.say(await this.build_bot_reply(
+                    message.talker().name(), text, content));
+            }
         }
     }
 
     async reset(message) {
         const text = message.text().trim(); // not used yet -- filter bot_user_name if necessary later.
         await this.history.clear();
-        await message.room().say(this.build_bot_reply(
-            message.talker().name(), text,
-            "已经重置会话历史。我已经忘记了我们之前的对话。现在可以重新开始向我提问了。"), message.talker());
-        return true;
+        const room = message.room()
+        const talker = message.talker()
+        const content = "已经重置会话历史。我已经忘记了我们之前的对话。现在可以重新开始向我提问了。"
+        if (room){
+            await room.say(await this.build_bot_reply(
+                message.talker().name(), text, content), message.talker());
+        } else {
+            await talker.say(await this.build_bot_reply(
+                message.talker().name(), text, content));
+        }
+
     }
 }

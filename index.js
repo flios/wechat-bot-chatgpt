@@ -24,28 +24,18 @@ const openai = new OpenAIApi(new Configuration({
 
 // Processor initialization
 const processors = {};
-
+const init_date = new Date();
 // Wechaty initialization
 const wechaty = WechatyBuilder.build({
     name: db.data.wechat.name,
+    puppetOptions: {
+        uos: true  // 开启uos协议
+    },
+    puppet: 'wechaty-puppet-wechat',
 });
 let bot_user_name = null;
 
-// Tencent SMS initialization
-const SmsClient = tencentcloud.sms.v20210111.Client;
-const smsClient = db.data.tencent_sms ? new SmsClient({
-    credential: {
-        secretId: db.data.tencent_sms.secret_id,
-        secretKey: db.data.tencent_sms.secret_key,
-    },
-    region: db.data.tencent_sms.region,
-}) : null;
-const smsParams = {
-    SmsSdkAppId: db.data.tencent_sms.sdk_app_id,
-    SignName: db.data.tencent_sms.sign_name,
-    TemplateId: db.data.tencent_sms.template_id,
-    PhoneNumberSet: db.data.tencent_sms.phone_number_set,
-}
+
 
 // Wechaty listeners
 wechaty
@@ -65,27 +55,9 @@ wechaty
     .on("error", (error) => {
         console.log("Error happened:");
         console.log(error);
-        if (smsClient && !wechaty.logonoff()) {
-            smsClient.SendSms(
-                {
-                    ...smsParams,
-                    TemplateParamSet: [
-                        `${db.data.wechat.name}机器人`,
-                        `掉线 ${error.toString().slice(0, 20)}...`,
-                    ],
-                },
-                (err, response) => {
-                    if (err) {
-                        console.log("SMS sending error:");
-                        console.log(err);
-                        return;
-                    }
-                    console.log("SMS sent!");
-                }
-            );
-        }
     })
     .on("message", async (message) => {
+        if (message.date()<init_date) {return;}
         if (!message.self() && message.room()
             && (await message.mentionSelf() ||
                 (bot_user_name && (message.text() + " ").includes("@" + bot_user_name)))) {
@@ -105,6 +77,29 @@ wechaty
             } else {
                 await processors[message.room().id].process(message, bot_user_name);
             }
+        }
+        else if (!message.self() && message.room()==null && message.talker()){
+            const talker = message.talker();
+            const text = message.text();
+            if (!(talker.id in processors)){
+                processors[talker.id] = new GeneralChatMessageProcessor(
+                    openai,
+                    db.data.wechat.general_chat_message.history_size,
+                    db.data.wechat.general_chat_message.default_system_prompt);
+                console.log(`New talker: ${talker.id}`);
+
+            }
+            if (message.text().includes("!!!RESET!!!")) {
+                await processors[talker.id].reset(message);
+            } else if (message.text().includes("!!!SYSTEM!!!")) {
+                await processors[talker.id].system(message, false, bot_user_name);
+            } else if (message.text().includes("!!!SYSTEMRESET!!!")) {
+                await processors[talker.id].system(message, true, bot_user_name);
+            } else {
+                await processors[talker.id].process(message, bot_user_name);
+            }
+
+
         }
     });
 
